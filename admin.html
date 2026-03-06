@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Admin Panel | Prince Kumar Chaudhary</title>
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    :root{--bg:#020E0E;--bg2:#051a14;--card:#061c16;--border:#0d2e23;--main:#01DE82;--main-dim:rgba(1,222,130,.15);--text:#fff;--muted:#7a9e91;--font:'Sora',sans-serif;--mono:'Space Mono',monospace;--ease:.3s cubic-bezier(.4,0,.2,1);--glow:0 0 20px rgba(1,222,130,.3);--r:14px}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--text);overflow:hidden}
+    ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--main);border-radius:3px}
+    a{text-decoration:none;color:inherit}
+    /* BUTTONS */
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:var(--main);color:var(--bg);border-radius:50px;font-family:var(--font);font-weight:700;font-size:.85rem;border:2px solid var(--main);cursor:pointer;transition:var(--ease);letter-spacing:.02em;white-space:nowrap}
+    .btn:hover{background:transparent;color:var(--main);box-shadow:var(--glow)}
+    .btn:disabled{opacity:.5;cursor:not-allowed;pointer-events:none}
+    .btn-sm{padding:7px 16px;font-size:.78rem}
+    .btn-outline{background:transparent;color:var(--main)}.btn-outline:hover{background:var(--main);color:var(--bg)}
+    .btn-full{width:100%;justify-content:center}
+    .btn-danger{background:rgba(239,68,68,.1);color:#ef4444;border-color:rgba(239,68,68,.3)}.btn-danger:hover{background:#ef4444;color:#fff;border-color:#ef4444;box-shadow:0 0 20px rgba(239,68,68,.3)}
+    /* FORM */
+    .form-group{display:flex;flex-direction:column;margin-bottom:16px}
+    .form-group label{font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+    .form-group input,.form-group textarea,.form-group select{background:rgba(1,222,130,.03);border:1px solid var(--border);border-radius:9px;padding:10px 13px;color:var(--text);font-family:var(--font);font-size:.87rem;transition:var(--ease);resize:vertical}
+    .form-group input:focus,.form-group textarea:focus,.form-group select:focus{outline:none;border-color:var(--main);background:rgba(1,222,130,.05);box-shadow:0 0 0 3px rgba(1,222,130,.1)}
+    .form-group select option{background:#061c16;color:#fff}
+    .form-group input::placeholder,.form-group textarea::placeholder{color:var(--muted);opacity:.5}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    /* LOGIN PAGE */
+    #login-page{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999}
+    #login-page::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(1,222,130,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(1,222,130,.03) 1px,transparent 1px);background-size:60px 60px;pointer-events:none}
+    .login-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:44px 40px;width:100%;max-width:420px;position:relative;box-shadow:0 0 80px rgba(1,222,130,.1)}
+    .login-logo{font-family:var(--mono);font-size:1.3rem;font-weight:700;text-align:center;margin-bottom:6px}.login-logo span{color:var(--main)}
+    .login-icon{width:60px;height:60px;background:var(--main-dim);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:var(--main);margin:20px auto 16px}
+    .login-title{text-align:center;font-size:1.5rem;font-weight:800;margin-bottom:6px}
+    .login-sub{text-align:center;color:var(--muted);font-size:.84rem;margin-bottom:28px}
+    .pass-wrap{position:relative;display:flex}.pass-wrap input{width:100%}
+    .pass-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;display:flex;transition:var(--ease)}.pass-toggle:hover{color:var(--main)}
+    .login-error{display:none;color:#ef4444;font-size:.82rem;text-align:center;margin-bottom:14px;padding:8px 14px;border-radius:8px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2)}.login-error.show{display:block}
+    .login-demo{text-align:center;font-size:.75rem;color:var(--muted);margin-top:16px}
+    .login-demo code{color:var(--main);background:rgba(1,222,130,.08);padding:1px 6px;border-radius:4px}
+    .back-btn{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:.82rem;margin-bottom:20px;transition:var(--ease);cursor:pointer;background:none;border:none;font-family:var(--font)}.back-btn:hover{color:var(--main)}
+    /* DASHBOARD LAYOUT */
+    #dash-page{position:fixed;inset:0;display:none}
+    #dash-page.active{display:block}
+    .dash-wrap{display:grid;grid-template-columns:230px 1fr;height:100vh}
+    /* SIDEBAR */
+    .sidebar{background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow:hidden}
+    .sb-logo{font-family:var(--mono);font-size:1.15rem;font-weight:700;padding:22px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0}
+    .sb-logo span{color:var(--main)}.sb-logo small{font-size:.6rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+    .sb-nav{flex:1;overflow-y:auto;padding:12px}
+    .sb-item{background:none;border:none;border-radius:10px;padding:11px 13px;color:var(--muted);font-family:var(--font);font-size:.87rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:10px;transition:var(--ease);text-align:left;width:100%;position:relative;margin-bottom:2px}
+    .sb-item:hover{background:var(--main-dim);color:var(--main)}.sb-item.active{background:var(--main-dim);color:var(--main)}
+    .sb-item i{font-size:1.1rem;flex-shrink:0}
+    .sb-badge{margin-left:auto;background:var(--main);color:var(--bg);font-size:.63rem;font-weight:700;padding:2px 7px;border-radius:50px;min-width:18px;text-align:center}
+    .sb-sep{height:1px;background:var(--border);margin:10px 0}
+    .sb-logout{margin:12px;border:1px solid var(--border);background:none;border-radius:10px;padding:10px 13px;color:var(--muted);font-family:var(--font);font-size:.86rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:9px;transition:var(--ease);width:calc(100% - 24px)}.sb-logout:hover{border-color:#ef4444;color:#ef4444}
+    /* MAIN */
+    .dash-main{overflow-y:auto;display:flex;flex-direction:column;height:100vh}
+    .topbar{display:flex;justify-content:space-between;align-items:center;padding:20px 26px;border-bottom:1px solid var(--border);background:var(--card);position:sticky;top:0;z-index:10;flex-shrink:0}
+    .topbar-left h1{font-size:1.3rem;font-weight:800;margin-bottom:2px}
+    .topbar-left p{font-size:.8rem;color:var(--muted)}.topbar-left p span{color:var(--main)}
+    .topbar-right{display:flex;align-items:center;gap:12px}
+    .topbar-date{font-family:var(--mono);font-size:.72rem;color:var(--muted)}
+    .dash-avatar{width:36px;height:36px;background:var(--main-dim);border:1px solid var(--main);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.95rem;color:var(--main)}
+    /* PANELS */
+    .panel{display:none;padding:24px 26px;flex:1}.panel.active{display:block}
+    /* STATS */
+    .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+    .stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;display:flex;align-items:center;gap:14px;transition:var(--ease)}.stat-card:hover{border-color:rgba(1,222,130,.3);transform:translateY(-2px)}
+    .stat-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0}
+    .stat-num{display:block;font-size:1.65rem;font-weight:800;font-family:var(--mono);line-height:1}
+    .stat-label{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+    /* CARDS */
+    .dash-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:18px}
+    .card-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+    .card-hdr h3{font-size:.93rem;font-weight:700;display:flex;align-items:center;gap:7px}.card-hdr h3 i{color:var(--main)}
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    /* ACTIVITY */
+    .act-list{display:flex;flex-direction:column}
+    .act-item{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--border);font-size:.84rem}.act-item:last-child{border-bottom:none}
+    .act-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .act-dot.green{background:var(--main)}.act-dot.blue{background:#3b82f6}.act-dot.yellow{background:#f59e0b}.act-dot.red{background:#ef4444}
+    .act-item strong{color:var(--text)}.act-item span{color:var(--muted);font-size:.74rem}
+    .act-body{display:flex;flex-direction:column;gap:1px;flex:1}
+    .act-time{margin-left:auto;font-size:.72rem;color:var(--muted);white-space:nowrap}
+    /* SKILL BARS */
+    .skill-bars{display:flex;flex-direction:column;gap:13px}
+    .sb-item-row .sb-lbl{display:flex;justify-content:space-between;font-size:.79rem;color:var(--muted);margin-bottom:5px}
+    .sb-track{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+    .sb-fill{height:100%;border-radius:3px;background:var(--c,#01DE82);transition:width 1.4s cubic-bezier(.4,0,.2,1)}
+    /* TABLE */
+    .dash-table{width:100%;border-collapse:collapse;font-size:.84rem}
+    .dash-table th{text-align:left;padding:9px 12px;font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);border-bottom:2px solid var(--border)}
+    .dash-table td{padding:11px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+    .dash-table tr:last-child td{border-bottom:none}.dash-table tr:hover td{background:rgba(1,222,130,.02)}
+    .status-badge{font-size:.68rem;font-family:var(--mono);padding:3px 9px;border-radius:50px;font-weight:700}
+    .status-badge.live{background:rgba(1,222,130,.12);color:var(--main);border:1px solid rgba(1,222,130,.3)}
+    .status-badge.wip{background:rgba(245,158,11,.1);color:#f59e0b;border:1px solid rgba(245,158,11,.3)}
+    .status-badge.draft{background:rgba(148,163,184,.1);color:#94a3b8;border:1px solid rgba(148,163,184,.2)}
+    .status-badge.published{background:rgba(1,222,130,.12);color:var(--main);border:1px solid rgba(1,222,130,.3)}
+    .tbl-btn{background:none;border:1px solid var(--border);border-radius:7px;padding:4px 8px;color:var(--muted);cursor:pointer;font-size:.88rem;transition:var(--ease);margin-right:4px}
+    .tbl-btn:hover{border-color:var(--main);color:var(--main)}.tbl-btn.red:hover{border-color:#ef4444;color:#ef4444}
+    /* MESSAGES */
+    .msg-list{display:flex;flex-direction:column}
+    .msg-item{display:flex;align-items:flex-start;gap:13px;padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:var(--ease);border-radius:8px;padding-left:8px}.msg-item:last-child{border-bottom:none}.msg-item:hover{background:rgba(1,222,130,.02)}
+    .msg-item.unread{background:rgba(1,222,130,.025)}
+    .msg-avatar{width:38px;height:38px;border-radius:50%;background:var(--main-dim);border:1px solid var(--main);display:flex;align-items:center;justify-content:center;font-size:.76rem;font-weight:700;color:var(--main);flex-shrink:0}
+    .msg-body{flex:1;min-width:0}
+    .msg-hdr{display:flex;align-items:center;gap:9px;margin-bottom:3px;flex-wrap:wrap}
+    .msg-hdr strong{font-size:.88rem}.msg-hdr span{font-size:.76rem;color:var(--muted)}.msg-hdr small{margin-left:auto;font-size:.72rem;color:var(--muted)}
+    .msg-subject{font-size:.83rem;font-weight:600;color:var(--text);margin-bottom:2px}
+    .msg-item:not(.unread) .msg-subject{color:var(--muted);font-weight:400}
+    .msg-preview{font-size:.78rem;color:var(--muted);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+    .unread-dot{width:8px;height:8px;background:var(--main);border-radius:50%;flex-shrink:0;margin-top:4px}
+    /* MODAL */
+    .modal-overlay{position:fixed;inset:0;background:rgba(2,14,14,.92);backdrop-filter:blur(12px);z-index:2000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:var(--ease)}
+    .modal-overlay.active{opacity:1;pointer-events:all}
+    .modal-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:36px 32px;width:100%;max-width:520px;position:relative;box-shadow:0 0 60px rgba(1,222,130,.12);transform:translateY(20px);transition:var(--ease);max-height:90vh;overflow-y:auto}
+    .modal-overlay.active .modal-box{transform:translateY(0)}
+    .modal-close{position:absolute;top:14px;right:14px;background:none;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer;transition:var(--ease);display:flex}.modal-close:hover{color:var(--main)}
+    .modal-title{font-size:1.25rem;font-weight:800;margin-bottom:20px}
+    /* SETTINGS */
+    .theme-swatches{display:flex;gap:11px;margin-top:8px}
+    .swatch{width:30px;height:30px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:var(--ease)}.swatch:hover,.swatch.active{border-color:var(--text);transform:scale(1.15)}
+    /* MOBILE */
+    @media(max-width:768px){
+      .dash-wrap{grid-template-columns:1fr}
+      .sidebar{display:none}
+      .stats-grid{grid-template-columns:1fr 1fr}
+      .two-col{grid-template-columns:1fr}
+      .form-row{grid-template-columns:1fr}
+      .panel{padding:16px}
+      .topbar{padding:14px 16px}
+      .mob-nav{display:flex!important}
+    }
+    /* Mobile bottom nav */
+    .mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);z-index:100;padding:4px 0}
+    .mob-nav .sb-item{flex-direction:column;gap:2px;font-size:.6rem;padding:5px 8px;justify-content:center;align-items:center;text-align:center;border-radius:8px;flex:1;margin:0}
+    .mob-nav .sb-item i{font-size:1.15rem}
+    @media(max-width:768px){.dash-main{padding-bottom:60px}}
+    @keyframes slideUp{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════ LOGIN PAGE ═══════════════════════════════ -->
+<div id="login-page">
+  <div class="login-box">
+    <div class="login-logo">Prince<span>.</span></div>
+    <div class="login-icon"><i class='bx bx-shield'></i></div>
+    <h2 class="login-title">Admin Access</h2>
+    <p class="login-sub">Sign in to manage your portfolio</p>
+    <div class="login-error" id="login-error">Invalid credentials. Please try again.</div>
+    <form id="login-form" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label>Email or Username</label>
+        <input type="text" id="li-email" placeholder="admin@yourdomain.com" autocomplete="username" required/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <div class="pass-wrap">
+          <input type="password" id="li-pass" placeholder="Enter password" autocomplete="current-password" required/>
+          <button type="button" class="pass-toggle" id="pass-toggle"><i class='bx bx-show'></i></button>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-full" id="login-btn" style="margin-top:6px"><i class='bx bx-log-in'></i> Sign In</button>
+    </form>
+    <p class="login-demo">Demo credentials: <code>admin</code> / <code>prince@2025</code></p>
+    <p style="text-align:center;margin-top:14px"><a href="index.html" style="color:var(--muted);font-size:.8rem;display:inline-flex;align-items:center;gap:5px;transition:var(--ease)"><i class='bx bx-arrow-back'></i> Back to Portfolio</a></p>
+  </div>
+</div>
+
+<!-- ═══════════════════ DASHBOARD ════════════════════════════════ -->
+<div id="dash-page">
+  <div class="dash-wrap">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sb-logo">Prince<span>.</span> <small>Admin</small></div>
+      <nav class="sb-nav">
+        <button class="sb-item active" data-panel="overview"><i class='bx bx-home-alt'></i> Overview</button>
+        <button class="sb-item" data-panel="projects"><i class='bx bx-folder'></i> Projects</button>
+        <button class="sb-item" data-panel="blog"><i class='bx bx-edit'></i> Blog Posts</button>
+        <button class="sb-item" data-panel="messages"><i class='bx bx-envelope'></i> Messages <span class="sb-badge" id="msg-badge">0</span></button>
+        <div class="sb-sep"></div>
+        <button class="sb-item" data-panel="settings"><i class='bx bx-cog'></i> Settings</button>
+      </nav>
+      <button class="sb-logout" id="logout-btn"><i class='bx bx-log-out'></i> Sign Out</button>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="dash-main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <h1 id="page-title">Overview</h1>
+          <p>Welcome back, <span id="welcome-name">Prince</span> 👋</p>
+        </div>
+        <div class="topbar-right">
+          <span class="topbar-date" id="topbar-date"></span>
+          <div class="dash-avatar"><i class='bx bx-user'></i></div>
+          <a href="index.html" class="btn btn-sm btn-outline"><i class='bx bx-link-external'></i> View Site</a>
+        </div>
+      </header>
+
+      <!-- ── OVERVIEW PANEL ── -->
+      <div class="panel active" id="panel-overview">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(1,222,130,.1);color:#01DE82"><i class='bx bx-folder-open'></i></div>
+            <div><span class="stat-num" id="s-projects">—</span><span class="stat-label">Projects</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(59,130,246,.1);color:#3b82f6"><i class='bx bx-edit'></i></div>
+            <div><span class="stat-num" id="s-blogs">—</span><span class="stat-label">Blog Posts</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(245,158,11,.1);color:#f59e0b"><i class='bx bx-envelope'></i></div>
+            <div><span class="stat-num" id="s-msgs">—</span><span class="stat-label">Unread Msgs</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(239,68,68,.1);color:#ef4444"><i class='bx bx-trending-up'></i></div>
+            <div><span class="stat-num">∞</span><span class="stat-label">Curiosity</span></div>
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="dash-card">
+            <div class="card-hdr"><h3><i class='bx bx-activity'></i> Recent Activity</h3></div>
+            <div class="act-list" id="activity-list"><p style="color:var(--muted);font-size:.84rem">Loading…</p></div>
+          </div>
+          <div class="dash-card">
+            <div class="card-hdr"><h3><i class='bx bx-bar-chart-alt-2'></i> Skills Progress</h3></div>
+            <div class="skill-bars">
+              <div class="sb-item-row"><div class="sb-lbl"><span>HTML / CSS</span><span>92%</span></div><div class="sb-track"><div class="sb-fill" style="width:0;--c:#01DE82" data-w="92%"></div></div></div>
+              <div class="sb-item-row"><div class="sb-lbl"><span>JavaScript</span><span>78%</span></div><div class="sb-track"><div class="sb-fill" style="width:0;--c:#3b82f6" data-w="78%"></div></div></div>
+              <div class="sb-item-row"><div class="sb-lbl"><span>AI / Automation</span><span>70%</span></div><div class="sb-track"><div class="sb-fill" style="width:0;--c:#f59e0b" data-w="70%"></div></div></div>
+              <div class="sb-item-row"><div class="sb-lbl"><span>Game Dev</span><span>60%</span></div><div class="sb-track"><div class="sb-fill" style="width:0;--c:#ef4444" data-w="60%"></div></div></div>
+              <div class="sb-item-row"><div class="sb-lbl"><span>Backend / DB</span><span>55%</span></div><div class="sb-track"><div class="sb-fill" style="width:0;--c:#a855f7" data-w="55%"></div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PROJECTS PANEL ── -->
+      <div class="panel" id="panel-projects">
+        <div class="dash-card">
+          <div class="card-hdr">
+            <h3><i class='bx bx-folder'></i> Projects</h3>
+            <button class="btn btn-sm" onclick="openProjectModal()"><i class='bx bx-plus'></i> Add Project</button>
+          </div>
+          <table class="dash-table">
+            <thead><tr><th>Title</th><th>Category</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="proj-tbody"><tr><td colspan="4" style="text-align:center;color:var(--muted);padding:28px"><i class="bx bx-loader-alt bx-spin"></i> Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── BLOG PANEL ── -->
+      <div class="panel" id="panel-blog">
+        <div class="dash-card">
+          <div class="card-hdr">
+            <h3><i class='bx bx-edit'></i> Blog Posts</h3>
+            <button class="btn btn-sm" onclick="openPostModal()"><i class='bx bx-plus'></i> New Post</button>
+          </div>
+          <table class="dash-table">
+            <thead><tr><th>Title</th><th>Category</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="blog-tbody"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:28px"><i class="bx bx-loader-alt bx-spin"></i> Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── MESSAGES PANEL ── -->
+      <div class="panel" id="panel-messages">
+        <div class="dash-card">
+          <div class="card-hdr"><h3><i class='bx bx-envelope'></i> Inbox</h3><button class="btn btn-sm btn-outline" onclick="loadMessages()"><i class='bx bx-refresh'></i> Refresh</button></div>
+          <div class="msg-list" id="msg-list"><p style="text-align:center;color:var(--muted);padding:32px"><i class="bx bx-loader-alt bx-spin"></i> Loading...</p></div>
+        </div>
+      </div>
+
+      <!-- ── SETTINGS PANEL ── -->
+      <div class="panel" id="panel-settings">
+        <div class="dash-card" style="max-width:600px">
+          <div class="card-hdr"><h3><i class='bx bx-cog'></i> Account Settings</h3></div>
+          <form onsubmit="saveSettings(event)">
+            <div class="form-row">
+              <div class="form-group"><label>Display Name</label><input type="text" id="s-name" value="Prince Kumar Chaudhary"/></div>
+              <div class="form-group"><label>Email</label><input type="email" id="s-email" value="princechy027@gmail.com"/></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>New Password</label><input type="password" id="s-newpass" placeholder="Leave blank to keep current"/></div>
+              <div class="form-group"><label>Confirm Password</label><input type="password" id="s-confpass" placeholder="Confirm new password"/></div>
+            </div>
+            <button type="submit" class="btn" style="width:auto"><i class='bx bx-save'></i> Save Changes</button>
+          </form>
+        </div>
+        <div class="dash-card" style="max-width:600px;margin-top:0">
+          <div class="card-hdr"><h3><i class='bx bx-palette'></i> Accent Colour</h3></div>
+          <div class="theme-swatches">
+            <button class="swatch active" style="background:#01DE82" title="Green" onclick="setAccent('#01DE82',this)"></button>
+            <button class="swatch" style="background:#3b82f6" title="Blue" onclick="setAccent('#3b82f6',this)"></button>
+            <button class="swatch" style="background:#a855f7" title="Purple" onclick="setAccent('#a855f7',this)"></button>
+            <button class="swatch" style="background:#f59e0b" title="Amber" onclick="setAccent('#f59e0b',this)"></button>
+            <button class="swatch" style="background:#ef4444" title="Red" onclick="setAccent('#ef4444',this)"></button>
+          </div>
+          <p style="color:var(--muted);font-size:.8rem;margin-top:10px">Click a swatch to change the accent colour live.</p>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Mobile bottom nav -->
+  <nav class="mob-nav">
+    <button class="sb-item active" data-panel="overview"><i class='bx bx-home-alt'></i>Home</button>
+    <button class="sb-item" data-panel="projects"><i class='bx bx-folder'></i>Projects</button>
+    <button class="sb-item" data-panel="blog"><i class='bx bx-edit'></i>Blog</button>
+    <button class="sb-item" data-panel="messages"><i class='bx bx-envelope'></i>Messages</button>
+    <button class="sb-item" data-panel="settings"><i class='bx bx-cog'></i>Settings</button>
+  </nav>
+</div>
+
+<!-- ═══ PROJECT MODAL ══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="proj-modal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('proj-modal')"><i class='bx bx-x'></i></button>
+    <h2 class="modal-title" id="proj-modal-title">Add Project</h2>
+    <input type="hidden" id="pm-id"/>
+    <div class="form-row">
+      <div class="form-group"><label>Title *</label><input type="text" id="pm-title" placeholder="Luxewear" required/></div>
+      <div class="form-group"><label>Category</label><input type="text" id="pm-cat" placeholder="E-Commerce"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Status</label>
+        <select id="pm-status"><option value="live">Live</option><option value="wip">In Progress</option><option value="draft">Draft</option></select>
+      </div>
+      <div class="form-group"><label>Live URL</label><input type="url" id="pm-liveurl" placeholder="https://..."/></div>
+    </div>
+    <div class="form-group"><label>GitHub URL</label><input type="url" id="pm-ghurl" placeholder="https://github.com/..."/></div>
+    <div class="form-group"><label>Image URL</label><input type="url" id="pm-imgurl" placeholder="https://..."/></div>
+    <div class="form-group"><label>Description</label><textarea id="pm-desc" rows="3" placeholder="Short description..."></textarea></div>
+    <button class="btn btn-full" onclick="saveProject()"><i class='bx bx-save'></i> Save Project</button>
+  </div>
+</div>
+
+<!-- ═══ BLOG MODAL ═════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="post-modal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('post-modal')"><i class='bx bx-x'></i></button>
+    <h2 class="modal-title" id="post-modal-title">New Blog Post</h2>
+    <input type="hidden" id="bm-id"/>
+    <div class="form-row">
+      <div class="form-group"><label>Title *</label><input type="text" id="bm-title" placeholder="My Blog Post" required/></div>
+      <div class="form-group"><label>Category</label><input type="text" id="bm-cat" placeholder="Web Dev"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Status</label>
+        <select id="bm-status"><option value="draft">Draft</option><option value="published">Published</option></select>
+      </div>
+      <div class="form-group"><label>Article URL</label><input type="url" id="bm-url" placeholder="https://medium.com/..."/></div>
+    </div>
+    <div class="form-group"><label>Excerpt</label><textarea id="bm-excerpt" rows="3" placeholder="Short preview text..."></textarea></div>
+    <button class="btn btn-full" onclick="savePost()"><i class='bx bx-save'></i> Save Post</button>
+  </div>
+</div>
+
+<!-- ═══ MESSAGE DETAIL MODAL ═══════════════════════════════════════ -->
+<div class="modal-overlay" id="msg-modal">
+  <div class="modal-box" style="max-width:560px">
+    <button class="modal-close" onclick="closeModal('msg-modal')"><i class='bx bx-x'></i></button>
+    <h2 class="modal-title" id="msg-modal-subject">Message</h2>
+    <div id="msg-modal-body" style="color:var(--muted);font-size:.9rem;line-height:1.7"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════
+const SUPABASE_URL  = 'https://kcwkpacopfsoglpucbyc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtjd2twYWNvcGZzb2dscHVjYnljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNjU3NzgsImV4cCI6MjA4Nzk0MTc3OH0.Qoa6FqqYfh8knyRR3Awm4djcTPVkhr9wuw0lTQ0PX9w';
+
+
+let sb = null;
+let _loginCount = 0, _loginReset = 0;
+
+function initSB() {
+  if (typeof window.supabase === 'undefined') return false;
+  try { sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); return true; }
+  catch(e) { console.error('[SB]', e.message); return false; }
+}
+
+// ─── HELPERS ─────────────────────────────
+function esc(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''}
+function timeAgo(d){
+  if(!d)return'';const diff=Date.now()-new Date(d).getTime();
+  const m=Math.floor(diff/60000),h=Math.floor(m/60),dy=Math.floor(h/24),w=Math.floor(dy/7);
+  if(w>0)return w+'w ago';if(dy>0)return dy+'d ago';if(h>0)return h+'h ago';if(m>0)return m+'m ago';return'just now';
+}
+function showToast(msg,type='info'){
+  let c=document.getElementById('tc');
+  if(!c){c=document.createElement('div');c.id='tc';c.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;width:max-content;max-width:90vw';document.body.appendChild(c);}
+  const col={success:'#01DE82',error:'#ef4444',info:'#3b82f6',warn:'#f59e0b'};
+  const t=document.createElement('div');
+  t.style.cssText=`background:#061c16;border:1px solid ${col[type]||col.info};color:${col[type]||col.info};padding:12px 20px;border-radius:10px;font-size:.85rem;font-family:'Sora',sans-serif;font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,.4);animation:slideUp .3s ease`;
+  t.textContent=msg;c.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300);},3800);
+}
+function setBtnLoad(id,txt){const b=document.getElementById(id);if(b){b._orig=b.innerHTML;b.innerHTML=`<i class="bx bx-loader-alt bx-spin"></i> ${txt}`;b.disabled=true;}}
+function resetBtn(id){const b=document.getElementById(id);if(b&&b._orig){b.innerHTML=b._orig;b.disabled=false;}}
+
+// ─── DB OPS ──────────────────────────────
+async function dbGet(table,opts={}){
+  if(!sb)return{data:null,error:{message:'DB not ready'}};
+  try{
+    let q=sb.from(table).select(opts.select||'*');
+    if(opts.eq)opts.eq.forEach(([c,v])=>q=q.eq(c,v));
+    if(opts.neq)opts.neq.forEach(([c,v])=>q=q.neq(c,v));
+    if(opts.order)q=q.order(opts.order.col,{ascending:opts.order.asc??true});
+    if(opts.limit)q=q.limit(opts.limit);
+    const{data,error}=await q;
+    if(error)throw error;
+    return{data,error:null};
+  }catch(e){console.error('[DB GET]',e.message);return{data:null,error:e};}
+}
+async function dbInsert(table,payload){
+  if(!sb)return{data:null,error:{message:'DB not ready'}};
+  try{const{data,error}=await sb.from(table).insert(payload).select();if(error)throw error;return{data,error:null};}
+  catch(e){console.error('[DB INS]',e.message);return{data:null,error:e};}
+}
+async function dbUpdate(table,payload,col,val){
+  if(!sb)return{data:null,error:{message:'DB not ready'}};
+  try{const{data,error}=await sb.from(table).update(payload).eq(col,val).select();if(error)throw error;return{data,error:null};}
+  catch(e){console.error('[DB UPD]',e.message);return{data:null,error:e};}
+}
+async function dbDelete(table,col,val){
+  if(!sb)return{error:null};
+  try{const{error}=await sb.from(table).delete().eq(col,val);if(error)throw error;return{error:null};}
+  catch(e){console.error('[DB DEL]',e.message);return{error:e};}
+}
+async function logActivity(color,title,description=''){
+  await dbInsert('activity_log',{color,title,description});
+}
+
+// ═══════════════════════════════════════════
+//  AUTH
+// ═══════════════════════════════════════════
+async function handleLogin(e){
+  e.preventDefault();
+  const errEl=document.getElementById('login-error');
+  const email=document.getElementById('li-email').value.trim();
+  const pass=document.getElementById('li-pass').value;
+  errEl.classList.remove('show');
+
+  if(!email||!pass){errEl.textContent='Please enter both fields.';errEl.classList.add('show');return;}
+
+  // Rate limit
+  const now=Date.now();
+  if(now>_loginReset){_loginCount=0;_loginReset=now+15*60*1000;}
+  if(++_loginCount>5){errEl.textContent=`Too many attempts. Wait ${Math.ceil((_loginReset-now)/60000)} min.`;errEl.classList.add('show');return;}
+
+  setBtnLoad('login-btn','Signing in...');
+
+  // Demo mode (when Supabase not configured or user uses demo creds)
+  if(!sb||(email===DEMO_USER&&pass===DEMO_PASS)){
+    if(email===DEMO_USER&&pass===DEMO_PASS){
+      resetBtn('login-btn');
+      openDash({email:'admin@demo.local'});
+      return;
+    } else {
+      resetBtn('login-btn');
+      errEl.textContent='Demo credentials: admin / prince@2025';
+      errEl.classList.add('show');
+      return;
+    }
+  }
+
+  // Real Supabase auth
+  const isEmail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if(!isEmail){resetBtn('login-btn');errEl.textContent='Please enter a valid email address.';errEl.classList.add('show');return;}
+
+  try{
+    const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
+    resetBtn('login-btn');
+    if(error){
+      let msg=error.message;
+      if(msg.toLowerCase().includes('invalid'))msg='Incorrect email or password.';
+      if(msg.toLowerCase().includes('not confirmed'))msg='Please confirm your email first.';
+      errEl.textContent=msg;errEl.classList.add('show');
+      document.getElementById('li-pass').value='';
+      return;
+    }
+    _loginCount=0;
+    openDash(data.user);
+  }catch(err){
+    resetBtn('login-btn');
+    errEl.textContent='Sign in failed: '+err.message;
+    errEl.classList.add('show');
+  }
+}
+
+async function handleLogout(){
+  if(sb)await sb.auth.signOut().catch(()=>{});
+  sessionStorage.removeItem('dashOpen');
+  document.getElementById('dash-page').classList.remove('active');
+  document.getElementById('login-page').style.display='flex';
+  document.getElementById('login-form').reset();
+  document.body.style.overflow='';
+  showToast('Signed out.','info');
+}
+
+// ═══════════════════════════════════════════
+//  DASHBOARD
+// ═══════════════════════════════════════════
+function openDash(user){
+  document.getElementById('login-page').style.display='none';
+  document.getElementById('dash-page').classList.add('active');
+  document.body.style.overflow='hidden';
+  sessionStorage.setItem('dashOpen','1');
+  // Welcome name
+  const nm=document.getElementById('welcome-name');
+  if(nm&&user?.email)nm.textContent=user.email.split('@')[0];
+  // Date
+  const d=document.getElementById('topbar-date');
+  if(d)d.textContent=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+  // Load overview
+  loadOverview();
+  // Animate skill bars after brief delay
+  setTimeout(()=>{
+    document.querySelectorAll('.sb-fill[data-w]').forEach(el=>el.style.width=el.dataset.w);
+  },400);
+}
+
+function switchPanel(panel){
+  document.querySelectorAll('.sb-item').forEach(b=>b.classList.toggle('active',b.dataset.panel===panel));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  const target=document.getElementById('panel-'+panel);
+  if(target)target.classList.add('active');
+  const labels={overview:'Overview',projects:'Projects',blog:'Blog Posts',messages:'Messages',settings:'Settings'};
+  const titleEl=document.getElementById('page-title');
+  if(titleEl)titleEl.textContent=labels[panel]||panel;
+  if(panel==='projects')loadProjects();
+  if(panel==='blog')loadBlog();
+  if(panel==='messages')loadMessages();
+}
+
+// ─── OVERVIEW ────────────────────────────
+async function loadOverview(){
+  const[pr,bl,mg]=await Promise.all([
+    dbGet('projects',{select:'id'}),
+    dbGet('blog_posts',{select:'id'}),
+    dbGet('messages',{select:'id',eq:[['read',false]]})
+  ]);
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v??'—';};
+  set('s-projects',pr.data?.length??'—');
+  set('s-blogs',bl.data?.length??'—');
+  set('s-msgs',mg.data?.length??'—');
+  const badge=document.getElementById('msg-badge');
+  if(badge)badge.textContent=mg.data?.length??0;
+  loadActivity();
+}
+
+async function loadActivity(){
+  const list=document.getElementById('activity-list');
+  if(!list)return;
+  const{data,error}=await dbGet('activity_log',{order:{col:'created_at',asc:false},limit:8});
+  if(error||!data?.length){list.innerHTML='<p style="color:var(--muted);font-size:.84rem">No activity yet.</p>';return;}
+  list.innerHTML=data.map(a=>`
+    <div class="act-item">
+      <span class="act-dot ${a.color||'green'}"></span>
+      <div class="act-body"><strong>${esc(a.title)}</strong><span>${esc(a.description||'')}</span></div>
+      <span class="act-time">${timeAgo(a.created_at)}</span>
+    </div>`).join('');
+}
+
+// ─── PROJECTS ────────────────────────────
+async function loadProjects(){
+  const tb=document.getElementById('proj-tbody');if(!tb)return;
+  tb.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:28px"><i class="bx bx-loader-alt bx-spin"></i> Loading...</td></tr>';
+  const{data,error}=await dbGet('projects',{order:{col:'created_at',asc:false}});
+  if(error){tb.innerHTML=`<tr><td colspan="4" style="color:#ef4444;padding:14px">Error: ${esc(error.message)}</td></tr>`;return;}
+  if(!data?.length){tb.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:28px">No projects yet. Add your first one!</td></tr>';return;}
+  tb.innerHTML=data.map(p=>`
+    <tr>
+      <td><strong>${esc(p.title)}</strong></td>
+      <td style="color:var(--muted)">${esc(p.category||'—')}</td>
+      <td><span class="status-badge ${p.status==='live'?'live':p.status==='wip'?'wip':'draft'}">${esc(p.status||'draft')}</span></td>
+      <td>
+        <button class="tbl-btn" onclick="editProject(${p.id})" title="Edit"><i class='bx bx-edit'></i></button>
+        <button class="tbl-btn red" onclick="delProject(${p.id},this)" title="Delete"><i class='bx bx-trash'></i></button>
+      </td>
+    </tr>`).join('');
+}
+
+function openProjectModal(data){
+  const m=document.getElementById('proj-modal');
+  document.getElementById('pm-id').value='';
+  document.getElementById('pm-title').value='';
+  document.getElementById('pm-cat').value='';
+  document.getElementById('pm-status').value='live';
+  document.getElementById('pm-liveurl').value='';
+  document.getElementById('pm-ghurl').value='';
+  document.getElementById('pm-imgurl').value='';
+  document.getElementById('pm-desc').value='';
+  document.getElementById('proj-modal-title').textContent='Add Project';
+  if(data){
+    document.getElementById('pm-id').value=data.id||'';
+    document.getElementById('pm-title').value=data.title||'';
+    document.getElementById('pm-cat').value=data.category||'';
+    document.getElementById('pm-status').value=data.status||'live';
+    document.getElementById('pm-liveurl').value=data.live_url||'';
+    document.getElementById('pm-ghurl').value=data.github_url||'';
+    document.getElementById('pm-imgurl').value=data.image_url||'';
+    document.getElementById('pm-desc').value=data.description||'';
+    document.getElementById('proj-modal-title').textContent='Edit Project';
+  }
+  m.classList.add('active');
+}
+
+async function editProject(id){
+  const{data,error}=await dbGet('projects',{eq:[['id',id]]});
+  if(error||!data?.length){showToast('Could not load project.','error');return;}
+  openProjectModal(data[0]);
+}
+
+async function saveProject(){
+  const id=document.getElementById('pm-id').value;
+  const title=document.getElementById('pm-title').value.trim();
+  if(!title){showToast('Title is required.','warn');return;}
+  const payload={
+    title,
+    category:document.getElementById('pm-cat').value.trim()||null,
+    status:document.getElementById('pm-status').value,
+    live_url:document.getElementById('pm-liveurl').value.trim()||null,
+    github_url:document.getElementById('pm-ghurl').value.trim()||null,
+    image_url:document.getElementById('pm-imgurl').value.trim()||null,
+    description:document.getElementById('pm-desc').value.trim()||null,
+  };
+  const{error}=id?await dbUpdate('projects',payload,'id',id):await dbInsert('projects',payload);
+  if(error){showToast('Save failed: '+error.message,'error');return;}
+  showToast(id?'Project updated!':'Project added!','success');
+  closeModal('proj-modal');
+  loadProjects();loadOverview();
+  logActivity('green',id?'Project updated':'Project added',title);
+}
+
+async function delProject(id,btn){
+  if(!confirm('Delete this project? This cannot be undone.'))return;
+  const orig=btn.innerHTML;btn.innerHTML='<i class="bx bx-loader-alt bx-spin"></i>';btn.disabled=true;
+  const{error}=await dbDelete('projects','id',id);
+  if(error){showToast('Delete failed: '+error.message,'error');btn.innerHTML=orig;btn.disabled=false;}
+  else{showToast('Project deleted.','success');loadProjects();loadOverview();logActivity('red','Project deleted','ID: '+id);}
+}
+
+// ─── BLOG ─────────────────────────────────
+async function loadBlog(){
+  const tb=document.getElementById('blog-tbody');if(!tb)return;
+  tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:28px"><i class="bx bx-loader-alt bx-spin"></i> Loading...</td></tr>';
+  const{data,error}=await dbGet('blog_posts',{order:{col:'created_at',asc:false}});
+  if(error){tb.innerHTML=`<tr><td colspan="5" style="color:#ef4444;padding:14px">Error: ${esc(error.message)}</td></tr>`;return;}
+  if(!data?.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:28px">No posts yet.</td></tr>';return;}
+  tb.innerHTML=data.map(p=>`
+    <tr>
+      <td><strong>${esc(p.title)}</strong></td>
+      <td style="color:var(--muted)">${esc(p.category||'—')}</td>
+      <td style="color:var(--muted)">${p.created_at?new Date(p.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'—'}</td>
+      <td><span class="status-badge ${p.status==='published'?'published':'draft'}">${esc(p.status||'draft')}</span></td>
+      <td>
+        <button class="tbl-btn" onclick="editPost(${p.id})"><i class='bx bx-edit'></i></button>
+        <button class="tbl-btn red" onclick="delPost(${p.id},this)"><i class='bx bx-trash'></i></button>
+      </td>
+    </tr>`).join('');
+}
+
+function openPostModal(data){
+  document.getElementById('bm-id').value='';
+  document.getElementById('bm-title').value='';
+  document.getElementById('bm-cat').value='';
+  document.getElementById('bm-status').value='draft';
+  document.getElementById('bm-url').value='';
+  document.getElementById('bm-excerpt').value='';
+  document.getElementById('post-modal-title').textContent='New Blog Post';
+  if(data){
+    document.getElementById('bm-id').value=data.id||'';
+    document.getElementById('bm-title').value=data.title||'';
+    document.getElementById('bm-cat').value=data.category||'';
+    document.getElementById('bm-status').value=data.status||'draft';
+    document.getElementById('bm-url').value=data.url||'';
+    document.getElementById('bm-excerpt').value=data.excerpt||'';
+    document.getElementById('post-modal-title').textContent='Edit Post';
+  }
+  document.getElementById('post-modal').classList.add('active');
+}
+
+async function editPost(id){
+  const{data,error}=await dbGet('blog_posts',{eq:[['id',id]]});
+  if(error||!data?.length){showToast('Could not load post.','error');return;}
+  openPostModal(data[0]);
+}
+
+async function savePost(){
+  const id=document.getElementById('bm-id').value;
+  const title=document.getElementById('bm-title').value.trim();
+  if(!title){showToast('Title is required.','warn');return;}
+  const payload={
+    title,
+    category:document.getElementById('bm-cat').value.trim()||null,
+    status:document.getElementById('bm-status').value,
+    url:document.getElementById('bm-url').value.trim()||null,
+    excerpt:document.getElementById('bm-excerpt').value.trim()||null,
+  };
+  const{error}=id?await dbUpdate('blog_posts',payload,'id',id):await dbInsert('blog_posts',payload);
+  if(error){showToast('Save failed: '+error.message,'error');return;}
+  showToast(id?'Post updated!':'Post created!','success');
+  closeModal('post-modal');
+  loadBlog();loadOverview();
+}
+
+async function delPost(id,btn){
+  if(!confirm('Delete this post?'))return;
+  const orig=btn.innerHTML;btn.innerHTML='<i class="bx bx-loader-alt bx-spin"></i>';btn.disabled=true;
+  const{error}=await dbDelete('blog_posts','id',id);
+  if(error){showToast('Delete failed: '+error.message,'error');btn.innerHTML=orig;btn.disabled=false;}
+  else{showToast('Post deleted.','success');loadBlog();loadOverview();}
+}
+
+// ─── MESSAGES ─────────────────────────────
+async function loadMessages(){
+  const list=document.getElementById('msg-list');if(!list)return;
+  list.innerHTML='<p style="text-align:center;color:var(--muted);padding:32px"><i class="bx bx-loader-alt bx-spin"></i> Loading...</p>';
+  const{data,error}=await dbGet('messages',{order:{col:'created_at',asc:false}});
+  if(error){list.innerHTML=`<p style="color:#ef4444;padding:14px">Error: ${esc(error.message)}</p>`;return;}
+  if(!data?.length){list.innerHTML='<p style="text-align:center;color:var(--muted);padding:32px">No messages yet.</p>';return;}
+  list.innerHTML=data.map(m=>`
+    <div class="msg-item ${m.read?'':'unread'}" id="mi-${m.id}" onclick="viewMessage(${m.id})">
+      <div class="msg-avatar">${esc((m.name||'?').slice(0,2).toUpperCase())}</div>
+      <div class="msg-body">
+        <div class="msg-hdr"><strong>${esc(m.name||'Unknown')}</strong><span>${esc(m.email||'')}</span><small>${timeAgo(m.created_at)}</small></div>
+        <p class="msg-subject">${esc(m.subject||'(No subject)')}</p>
+        <p class="msg-preview">${esc((m.message||'').slice(0,100))}${(m.message||'').length>100?'…':''}</p>
+      </div>
+      ${!m.read?'<span class="unread-dot"></span>':''}
+      <button class="tbl-btn red" style="flex-shrink:0;margin-left:8px" onclick="event.stopPropagation();delMsg(${m.id},this)" title="Delete"><i class='bx bx-trash'></i></button>
+    </div>`).join('');
+}
+
+async function viewMessage(id){
+  // Mark read
+  const el=document.getElementById('mi-'+id);
+  if(el?.classList.contains('unread')){
+    await dbUpdate('messages',{read:true},'id',id);
+    el.classList.remove('unread');
+    el.querySelector('.unread-dot')?.remove();
+    loadOverview();
+  }
+  // Show detail modal
+  const{data}=await dbGet('messages',{eq:[['id',id]]});
+  if(!data?.length)return;
+  const m=data[0];
+  document.getElementById('msg-modal-subject').textContent=esc(m.subject||'(No subject)');
+  document.getElementById('msg-modal-body').innerHTML=`
+    <p style="margin-bottom:12px"><strong>From:</strong> ${esc(m.name)} &lt;<a href="mailto:${esc(m.email)}" style="color:var(--main)">${esc(m.email)}</a>&gt;</p>
+    ${m.phone?`<p style="margin-bottom:12px"><strong>Phone:</strong> ${esc(m.phone)}</p>`:''}
+    <p style="margin-bottom:12px"><strong>Received:</strong> ${m.created_at?new Date(m.created_at).toLocaleString():''}</p>
+    <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+    <p style="white-space:pre-wrap">${esc(m.message)}</p>
+    <div style="margin-top:20px;display:flex;gap:10px">
+      <a href="mailto:${esc(m.email)}?subject=Re: ${esc(m.subject)}" class="btn btn-sm"><i class='bx bx-reply'></i> Reply</a>
+      <button class="btn btn-sm btn-danger" onclick="delMsg(${m.id},this);closeModal('msg-modal')"><i class='bx bx-trash'></i> Delete</button>
+    </div>`;
+  document.getElementById('msg-modal').classList.add('active');
+}
+
+async function delMsg(id,btn){
+  if(!confirm('Delete this message?'))return;
+  const orig=btn.innerHTML;btn.innerHTML='<i class="bx bx-loader-alt bx-spin"></i>';btn.disabled=true;
+  const{error}=await dbDelete('messages','id',id);
+  if(error){showToast('Delete failed: '+error.message,'error');btn.innerHTML=orig;btn.disabled=false;}
+  else{showToast('Message deleted.','success');loadMessages();loadOverview();}
+}
+
+// ─── SETTINGS ─────────────────────────────
+async function saveSettings(e){
+  e.preventDefault();
+  const np=document.getElementById('s-newpass').value;
+  const cp=document.getElementById('s-confpass').value;
+  if(np&&np!==cp){showToast('Passwords do not match.','warn');return;}
+  if(np&&np.length<8){showToast('Password must be at least 8 characters.','warn');return;}
+  if(np&&sb){
+    try{
+      const{error}=await sb.auth.updateUser({password:np});
+      if(error)throw error;
+      showToast('Password updated!','success');
+      document.getElementById('s-newpass').value='';
+      document.getElementById('s-confpass').value='';
+    }catch(err){showToast('Password update failed: '+err.message,'error');return;}
+  } else {
+    showToast('Settings saved!','success');
+  }
+}
+
+function setAccent(color,el){
+  document.documentElement.style.setProperty('--main',color);
+  document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('active'));
+  if(el)el.classList.add('active');
+}
+
+// ─── MODALS ───────────────────────────────
+function closeModal(id){
+  const m=document.getElementById(id);
+  if(m)m.classList.remove('active');
+}
+
+// ─── INIT ─────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  initSB();
+
+  // Password toggle
+  const pt=document.getElementById('pass-toggle'),pi=document.getElementById('li-pass');
+  if(pt&&pi)pt.addEventListener('click',()=>{const s=pi.type==='password';pi.type=s?'text':'password';pt.innerHTML=s?"<i class='bx bx-hide'></i>":"<i class='bx bx-show'></i>";});
+
+  // Panel switching (sidebar + mobile nav)
+  document.querySelectorAll('.sb-item[data-panel]').forEach(btn=>{
+    btn.addEventListener('click',()=>switchPanel(btn.dataset.panel));
+  });
+
+  // Logout
+  document.getElementById('logout-btn')?.addEventListener('click',handleLogout);
+
+  // Close modals on overlay click
+  document.querySelectorAll('.modal-overlay').forEach(m=>{
+    m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('active');});
+  });
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape')document.querySelectorAll('.modal-overlay.active').forEach(m=>m.classList.remove('active'));
+  });
+
+  // Auth state listener (token refresh / external sign-out)
+  if(sb){
+    sb.auth.onAuthStateChange((event,session)=>{
+      if((event==='SIGNED_OUT'||(event==='TOKEN_REFRESHED'&&!session))&&document.getElementById('dash-page').classList.contains('active')){
+        handleLogout();
+      }
+    });
+    // Restore existing session
+    sb.auth.getSession().then(({data})=>{
+      if(data?.session?.user&&sessionStorage.getItem('dashOpen')==='1'){
+        openDash(data.session.user);
+      }
+    });
+  }
+});
+</script>
+</body>
+</html>
